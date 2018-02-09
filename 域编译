@@ -1,0 +1,117 @@
+静态field,非静态field编译
+
+
+热部署不支持field/method增加和删除和 clinit方法的修改，静态field的初始化和静态代码块会被编译在编译器合成的方法clinit中，非静态字段的初始化会被编译在编译器生成的init无参构造函数中，
+
+
+静态field,静态代码块
+
+
+clinit方法会在类加载阶段的类初始化时调用，clinit中静态field和静态代码块的出现顺序就是二者在源码中出现的顺序。因为类已经加载过了，所以就算修复了clinit方法也不会生效了。
+dvmResolveClass->dvmLinkClass->dvmInitClass,然后执行clinit方法
+以下情况会去加载一个类
+
+1.new 一个类的对象时new instance
+2.调用类的静态方法（invoke static）
+3.获取类的静态域的值（sget）
+
+
+非静态field,非静态代码块
+
+
+类的构造函数会被编译器翻译成init方法，会先进行非静态field和非静态代码块的初始化。它们出现的顺序也是和在源码中出现的顺序一样。
+执行new instance指令时，如果类没有加载过，就尝试加载类。然后对对象内存分配，再然后执行invoke direct指令调用类的init构造函数进行初始化
+
+
+热部署解决方案
+
+
+不支持对静态字段和静态代码块的修改，会导致热部署失败，只能冷启动生效。支持非静态字段和非静态代码块修改，热部署只是将init构造函数作为普通的方法变更。
+
+
+
+    final static 域编译
+
+
+final static 域编译规则
+
+
+final static引用类型初始化仍在clinit中final static基本类型和String类型，类加载初始化dvminitClass在执行clinit方法之前，先执行initSFields，这个方法为static域赋予默认值。引用类型默认NULL，final static修饰的基本类型和String类型会在这里初始化赋值。
+
+
+final static 域优化原理 
+
+
+final static基本类型执行const/4指令,操作数在dex中的位置(encoded_array_item)就是在opcode后一个字节。
+final static String类型执行const-string指令，本质同上只不过拿到的是字符串常量在dex文件结构中字符串常量区的索引id。dex文件有一块区域存储所有的字符串常量会被完整的加载到虚拟机内存中-字符串常量区。
+final static引用类型执行sget指令,首先调用dvmDexGetResolveField看这个域是否之前解析过，没有的话调用dvmDexResolveField尝试解析域，如果这个静态域所在的类没有解析过，尝试调用dvmResolveClass,拿到这个sField，然后通过dvmDexGetResolveField(sField)获取这个静态值。
+
+
+热部署解决方案
+
+
+final static基本类型/string类型最终引用的类型会被热部署替换掉。
+final static引用类型因为会被翻译到clinit方法中，热部署失败。
+
+
+    泛型编译
+
+
+为什么需要泛型
+
+
+Java泛型完全有编译器实现，由编译器执行类型检查和类型推断，生成非泛型字节码，称之为擦除。
+没有泛型之前想要实现类泛型，利用所有类的父类时Object进行强转，这完全依赖程序员的自主性，很容易出现ClassCastException。泛型的出现解决了类型检查和类型推断的问题。
+
+
+泛型类型擦除
+
+
+Java字节码中不包含泛型类型信息，想要区别类型定义可以限定泛型类型
+
+
+类型擦除与多态的冲突和解决
+
+
+父类是泛型类有setNumber(T value),子类想override setNumber(Number value)。然而实际父类的方法实际是setNumber(Object value),子类想重写却变成了重载，这就出现了类型擦除和多态之间的冲突。然而编译器自动帮我们合成了Bridge方法实现了重载，在子类中生成了相同签名bridge方法，内部实际调用子类的重写方法。
+
+
+泛型类型转换
+
+
+编译器如果发现变量声明加上了泛型信息，编译器自动加上了check-cast的强制转换，因为编译器会为泛型做类型检查，所以自动的强制转换不会出现ClassCastException。
+
+
+热部署解决方案
+
+
+如果父类补丁变成了增加了泛型则会增加Bridge方法，造成热部署失败。
+将方法从void get(B t) 变成 B extends Number void get(B t)方法逻辑不会发生变化，但是方法的签名会发生变化，这种情况热修复没有意义，需要避免这种情况的发生。
+
+
+
+    Lambda表达式编译
+
+
+Lambda表达式编译规则
+
+
+Lamda表达式具有函数式编程的特点，是Java中最接近闭包的概念。函数式接口：一个接口具有唯一一个抽象方法
+Java中的Runable和Comparator都是典型的函数式接口
+
+
+Lamada表达式和匿名内部类的区别：
+1.this关键字指包围Lamada表达式的类而不是指向匿名内部类自己
+2.编译方式，Java编译器将Lamda表达式编译成类的私有方法，使用了Java7的invokedynamic动态绑定这个私有方法。而匿名内部类则是生成外部类&number的新类.编译器都会在类下生成lamda$main$**{ * }私有静态方法，这个方法实现了lamda表达式的逻辑，引用的变量都会变成方法的参数。
+
+
+在HostSpot VM下解释class文件的lamda表达式：
+invokeDynamic指令调用java/lang/invoke/LamdaMetafactory的metafactory这个静态方法。这个方法会在运行时生成实现函数式接口的具体类，这个具体类会调用那个静态私有方法。
+在Android虚拟机下解释dex文件中的lamda表达式：则是在优化成dex文件的时候就生成了这个具体类。
+
+
+热部署解决方案
+
+新增lamada表达式会导致外部类新增一个辅助方法。修改的lamda表达式逻辑引用了外部变量，会导致辅助类持有了外部对象，会新增这个外部对象的变量。也是会导致热修复失败。
+
+
