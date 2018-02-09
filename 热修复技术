@@ -1,0 +1,17 @@
+要弄清热修复技术的原理，就要先弄清Android的ClassLoader机制，相关文章可以阅读之前的介绍：ClassLoader类加载机制。
+
+http://blog.csdn.net/xiangzhihong8/article/details/52880327?spm=5176.100239.blogcont184258.19.LQkbFH
+
+Android的ClassLoader分为PathClassLoader和DexClassLoader，它们都都继承自BaseDexClassLoader，其中PathClassLoader用来加载系统类和应用类；DexClassLoader用来加载jar、apk、dex文件。例如下面要介绍的阿里的Andfix和Sophix的原理如下：
+
+
+AndFix
+
+AndFix：由补丁类的classLoader加载补丁类，在native层针对不同Android架构中的不同的ArtMethod结构调用对应的replaceMethod方法按照定义好的ArtMethod结构一一替换方法的所有信息如所属类、访问权限、代码内存地址等。
+稳定性较差，会受到国内ROM厂商对ArtMethod结构更改的影响,所以这正是AndFix不支持很多机型的原因。
+
+
+Sophix
+
+Sophix:由补丁类的classLoader加载补丁类，在native层直接memcpy(smeth,dmth,sizeof(ArtMethod))替换整个artMethod的结构。初始化类时会为这个类分配空间，AllocArtMethodArray会紧挨着的new出来放入art中的方法数组中。通过计算辅助类的前后两个方法的起始地址就可以计算出artMethod结构的大小了。
+注：补丁类初始化时，也会分配自己的artMethod空间，拿这个修复过的新ArtMethod去替换旧ArtMethod的内容，不用管ArtMethod的结构。稳定性大大提高！
