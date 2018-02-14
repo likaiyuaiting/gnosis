@@ -1,0 +1,83 @@
+此时将自动生成tasks.json
+将其中的
+
+"command": "echo",
+
+    1
+
+改为
+
+"command": "g++",
+
+    1
+
+将
+
+"args": ["Hello World"],
+
+    1
+
+改为
+
+"args": ["-g","${workspaceRoot}/main.cpp"],
+
+    1
+
+注意这里的main.cpp要和你当前路径的源码名称一致。
+完整的tasks.json
+
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "0.1.0",
+    "command": "g++",
+    "isShellCommand": true,
+    "args": ["-g","${workspaceRoot}/main.cpp"],
+    "showOutput": "always"
+}
+
+
+运行测试
+
+随便编写个代码
+
+#include<iostream>
+using namespace std;
+
+int main()
+{
+    cout<<"hello VS Code"<<endl;
+    return 0;
+}
+
+
+
+按crtl + shift + B构建，按F5运行，发现终端一闪而过，什么都没有输出。于是考虑Windows下的办法。
+
+#include<iostream>
+#include<stdlib.h>
+using namespace std;
+
+int main()
+{
+    cout<<"hello VS Code"<<endl;
+    system("pause");
+    return 0;
+}
+
+同样并没有卵用。那就换一种方式。
+
+#include<iostream>
+#include<stdio.h>
+using namespace std;
+
+int main()
+{
+    cout<<"hello VS Code"<<endl;
+    getchar();
+    return 0;
+}
+
+  
+
+按crtl + shift + B构建，按F5运行，程序完美输出
