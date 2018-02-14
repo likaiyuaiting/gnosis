@@ -1,0 +1,54 @@
+然后会自动生成launch.json文件，下面只需要修改两个地方
+将
+
+"program": "enter program name, for example \${workspaceRoot}/a.out",
+
+    1
+
+改为
+
+"program": "${workspaceRoot}/a.out",
+
+    1
+
+将
+
+"cwd": "\${workspaceRoot}",
+
+    1
+
+改为
+
+"cwd": "${workspaceRoot}",
+
+    1
+
+完整的launch.json
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/a.out",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
+
+
+然后，调出命令行，输入Task Runner，选择others 
