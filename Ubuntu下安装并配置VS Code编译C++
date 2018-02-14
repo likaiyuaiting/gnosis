@@ -1,0 +1,22 @@
+安装VS Code
+
+sudo add-apt-repository ppa:ubuntu-desktop/ubuntu-make
+sudo apt-get update
+sudo apt-get install ubuntu-make
+sudo umake web visual-studio-code
+
+    1
+    2
+    3
+    4
+
+然后按a直接默认同意就可以。
+安装插件
+
+打开VS Code后，按crtl + shift + P调出命令行，然后搜索C++，安装微软自己开发的那个。
+同样可以安装C++ Intellisense插件，用于自动补全代码。
+配置launch.json和tasks.json
+
+注意VS Code只能打开源码所在的文件夹，而不是直接打开源码文件，否则下面将无法进行！
+
+打开源码所在文件夹后，在该文件夹中打开源码。按F5键，选择C++，
