@@ -1,9 +1,0 @@
-期间在终端里执行了以下操作
-
-sudo apt-get install clang
-
-    1
-
-如果提示Clang有错可以运行该命令，安装clang。
-
-那么问题来了，是不是换个文件夹每次写个代码都得配置lauch.json和task.json文件呢？或者将.vscode文件夹复制到当前文件夹下？这样岂不是很麻烦，细思极恐
